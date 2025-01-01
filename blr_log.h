@@ -1,8 +1,22 @@
 #ifndef __BLR_LOG_H
 #define __BLR_LOG_H
-#ifdef BLR_LOG      // Use -DBLR_LOG to enable
-#define _GNU_SOURCE         // get safe version of basename(2)
-#include <string.h>         // basename(2)
+#ifdef BLR_LOG              // Use -DBLR_LOG to enable
+
+// If <string.h> has already been included, we don't know if
+// _GNU_SOURCE had been defined prior to its include.  So die.
+// This test is fragile, but it'll do for now.
+#ifdef _STRING_H
+#error Due to GNU basename(3) shenanigans, <blr_log.h> must be #included before <string.h> or any other header that pulls in <string.h>.
+#endif
+
+// I don't every recall seeing anyone use <libgen.h>, but just in case....
+// Again, very fragile, but will do for now.
+#ifdef _LIBGEN_H
+#error <blr_log.h> depends on the GNU version of basename(3), but <libgen.h> is already included and defines a conflicting version.
+#endif
+
+#define _GNU_SOURCE         // get safe version of basename(3)
+#include <string.h>         // basename(3)
 #include <sys/types.h>      // open(2)
 #include <sys/stat.h>       // open(2), getpid(2), getppid(2)
 #include <fcntl.h>          // open(2)
@@ -28,7 +42,7 @@
                 S_IRUSR | S_IWUSR ); \
         if( -1 != blr_fd ){ \
             dprintf( blr_fd, \
-                    "%lf %i %i %15s %4d %-25s : " fmt "\n", \
+                    "%lf %i %i %15s %4d %-24s : " fmt "\n", \
                     blr_now, \
                     getpid(), getppid(), \
                     basename(__FILE__), __LINE__, __func__, \
