@@ -23,8 +23,14 @@
 #include <stdio.h>          // snprintf(3), dprintf(3)
 #include <unistd.h>         // getpid(2), getppid(2)
 #include <sys/time.h>       // gettimeofday(2)
+#include <stdlib.h>         // getenv(3), setenv(3), atoi(3)
 
-#define blr_log( fmt, ... )\
+static int blr_stack_depth;                 // file scope so other log calls can use it.
+                                            // Minimum value is 1.
+static const int blr_max_indent_depth=15;   // Depends on how wide your screen is, I suppose.
+static char blr_new_depth_str[ 22 ];
+
+#define _blr_log( suffix, fmt, ... )\
     do{ \
         static struct timeval blr_tv; \
         gettimeofday( &blr_tv, NULL ); \
@@ -32,9 +38,9 @@
         blr_now = \
             blr_tv.tv_sec + blr_tv.tv_usec/1000000.0; \
         static const char path[] = \
-            "/p/vast1/rountree/tuolumne/traces"; \
+            "/p/vast1/rountree/tuolumne/blr_logs"; \
         static char filename[128]; \
-        snprintf( filename, 127, "%s/%i.blr", \
+        snprintf( filename, 127, "%s/%i." suffix, \
                 path, getpid() ); \
         static int blr_fd; \
         blr_fd = open( filename, \
@@ -42,16 +48,54 @@
                 S_IRUSR | S_IWUSR ); \
         if( -1 != blr_fd ){ \
             dprintf( blr_fd, \
-                    "%lf %i %i %15s %4d %-24s : " fmt "\n", \
+                    "%lf %i %i %-15s %4d %*s %s : " fmt "\n", \
                     blr_now, \
                     getpid(), getppid(), \
-                    basename(__FILE__), __LINE__, __func__, \
+                    basename(__FILE__), __LINE__, \
+                    blr_stack_depth < blr_max_indent_depth ? blr_stack_depth : blr_max_indent_depth, "+", \
+                    __func__, \
                     ##  __VA_ARGS__ ); \
             close( blr_fd ); \
         } \
     }while(0)
-#else
+#define blr_log( fmt, ... )   _blr_log( "log", fmt, ## __VA_ARGS__ )
+#define blr_err( fmt, ... )   _blr_log( "err", fmt, ## __VA_ARGS__ )
+#define blr_preamble( fmt, ... )\
+    do{ \
+        char *depth_str = getenv("BLR_STACK_DEPTH"); \
+        if( NULL == depth_str ){ \
+            blr_stack_depth = 0; \
+        }else{ \
+            blr_stack_depth = atoi( depth_str ); \
+        } \
+        blr_stack_depth++; \
+        snprintf( blr_new_depth_str, 21, "%i", blr_stack_depth ); \
+        setenv( "BLR_STACK_DEPTH", blr_new_depth_str, 1 ); \
+        _blr_log( "preamble", fmt, ## __VA_ARGS__ ); \
+    }while(0);
+
+
+#define blr_postamble( fmt, ... )\
+    do{ \
+        _blr_log( "postamble", fmt, ## __VA_ARGS__ ); \
+        char *depth_str = getenv("BLR_STACK_DEPTH"); \
+        if( NULL == depth_str ){ \
+            blr_stack_depth = 2; \
+        }else{ \
+            blr_stack_depth = atoi( depth_str ); \
+        } \
+        if( blr_stack_depth > 1 ){ \
+            blr_stack_depth--; \
+        } \
+        snprintf( blr_new_depth_str, 21, "%i", blr_stack_depth ); \
+        setenv( "BLR_STACK_DEPTH", blr_new_depth_str, 1 ); \
+    }while(0);
+#else  // BLR_LOG
 #define blr_log( fmt, ... )
+#define blr_err( fmt, ... )
+#define blr_preamble( fmt, ... )
+#define blr_postamble( fmt, ... )
 #endif // BLR_LOG
+
 
 #endif // __BLR_LOG_H
