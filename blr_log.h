@@ -1,3 +1,29 @@
+/* blr_log.h
+ *
+ * A logging almost-library for a very specific set of constraints.
+ *
+ * Use blr_preamble( ... ) and blr_postamble( ... ) at entry and exit points
+ * of functions, respectively, to get stack-depth-based indenting.
+ *
+ * Not at all thread safe.
+ *
+ * Definitely heavyweight.
+ *
+ * Spindle in its current incarnation occasionally shuts down all open file
+ * descriptors.  We get around this by opening and closing each log file as
+ * needed.
+ *
+ * Spindle has a complex build architecture and an existing logging infrastructure.
+ * Adding a new set of files for a competing logger would be both difficult and
+ * impolitic.  That said, Spindle's existing logger has several shortcoming with
+ * regard to coverage and funciton naming that I've eliminated in this design.
+ *
+ * Spindle uses deep magic to manipulate libraries.  I want to avoid any entanglements
+ * there, so this logger is contained in a single header file that can be injected
+ * via CFLAGS (and similar) compile-time environment variables.  That constraint
+ * leads to storing state in the environment.
+ */
+
 #ifndef __BLR_LOG_H
 #define __BLR_LOG_H
 #ifdef BLR_LOG              // Use -DBLR_LOG to enable
