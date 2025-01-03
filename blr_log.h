@@ -41,7 +41,9 @@
 #error <blr_log.h> depends on the GNU version of basename(3), but <libgen.h> is already included and defines a conflicting version.
 #endif
 
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE         // get safe version of basename(3)
+#endif
 #include <string.h>         // basename(3)
 #include <sys/types.h>      // open(2)
 #include <sys/stat.h>       // open(2), getpid(2), getppid(2)
