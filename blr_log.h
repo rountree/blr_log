@@ -53,6 +53,9 @@
 #include <sys/time.h>       // gettimeofday(2)
 #include <stdlib.h>         // getenv(3), setenv(3), atoi(3)
 
+#define blr_xstr(s) blr_str(s)
+#define blr_str(s) #s
+
 static int blr_stack_depth;                 // file scope so other log calls can use it.
                                             // Minimum value is 1.
 static const int blr_max_indent_depth=15;   // Depends on how wide your screen is, I suppose.
@@ -76,7 +79,7 @@ static char blr_new_depth_str[ 22 ];
                 S_IRUSR | S_IWUSR ); \
         if( -1 != blr_fd ){ \
             dprintf( blr_fd, \
-                    "%lf %i %i %-15s %4d %*s %s (%d): " fmt "\n", \
+                    "%lf %i %i %-30s %4d %*s %s (%d): " fmt "\n", \
                     blr_now, \
                     getpid(), getppid(), \
                     basename(__FILE__), __LINE__, \
